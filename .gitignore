@@ -7,6 +7,9 @@ __pycache__/
 .mypy_cache/
 *.log
 *.tmp
+*.pth
+*.pt
+runs/
 
 data/raw/*
 !data/raw/.gitkeep
