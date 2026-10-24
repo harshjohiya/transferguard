@@ -11,6 +11,15 @@ IMAGENET_MEAN = (0.485, 0.456, 0.406)
 IMAGENET_STD = (0.229, 0.224, 0.225)
 
 
+def get_cifar10_eval_transform():
+    """Deterministic transform shared by validation and transferability scoring."""
+    return transforms.Compose([
+        transforms.Resize((128, 128)),
+        transforms.ToTensor(),
+        transforms.Normalize(IMAGENET_MEAN, IMAGENET_STD),
+    ])
+
+
 def balanced_split_indices(targets, train_size=2000, val_size=5000, seed=42):
     by_class = defaultdict(list)
     for index, label in enumerate(targets):
@@ -49,11 +58,7 @@ def get_cifar10_datasets(data_dir="data/raw", train_size=2000, val_size=5000, se
         transforms.ToTensor(),
         transforms.Normalize(IMAGENET_MEAN, IMAGENET_STD),
     ])
-    eval_transform = transforms.Compose([
-        transforms.Resize((128, 128)),
-        transforms.ToTensor(),
-        transforms.Normalize(IMAGENET_MEAN, IMAGENET_STD),
-    ])
+    eval_transform = get_cifar10_eval_transform()
 
     root = str(Path(data_dir))
     train_data = CIFAR10(root=root, train=True, download=True, transform=train_transform)

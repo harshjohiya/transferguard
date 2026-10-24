@@ -71,3 +71,16 @@ For a comparison with the same target training budget, train the scratch and Ima
 Replace each `RUN_ID` with its own run directory name. The comparison command can omit run arguments when exactly one completed run exists for each mode. It reports ambiguity or incompatible target splits, seeds, evaluation settings, and epoch budgets rather than choosing silently. Source results are saved under `runs/source_svhn/`, and target results under `runs/svhn_finetune/`; each run contains a checkpoint, metrics CSV, configuration JSON, and summary JSON. The target configuration also records the source checkpoint path and source configuration.
 
 Transfer gap is transferred validation accuracy minus scratch validation accuracy, in percentage points. A negative gap is a candidate negative-transfer observation; it does not prove negative transfer. Longer runs and repeated seeds are needed before drawing a conclusion. The official CIFAR-10 test partition is never used during target training or model selection.
+
+## Phase 4: transferability estimation
+
+Phase 4 computes class-wise LogME scores from frozen ImageNet, SVHN-source, or random MobileNetV3-Small features on the same 2,000 CIFAR-10 training images. It uses the deterministic validation preprocessing and never fits scores on validation or test images. Run `python -m experiments.transferability.score --help` for options. For all three feature stages:
+
+```powershell
+.\.venv\Scripts\python.exe -m experiments.transferability.score --source imagenet --layers all --device cuda
+.\.venv\Scripts\python.exe -m experiments.transferability.score --source svhn --source-checkpoint runs\source_svhn\RUN_ID\best_model.pth --layers all --device cuda
+.\.venv\Scripts\python.exe -m experiments.transferability.score --source random --layers all --device cuda
+.\.venv\Scripts\python.exe -m experiments.transferability.compare --imagenet-run runs\logme\imagenet\RUN_ID --svhn-run runs\logme\svhn\RUN_ID --random-run runs\logme\random\RUN_ID
+```
+
+Results are saved in unique `runs/logme/<source>/` directories. See [Phase 4 methodology and interpretation](docs/p4_transferability.md) for the evidence formula, feature dimensions, comparability checks, and limitations. LogME is an estimate of frozen-feature suitability, not demonstrated negative transfer.
