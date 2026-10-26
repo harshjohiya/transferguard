@@ -84,3 +84,16 @@ Phase 4 computes class-wise LogME scores from frozen ImageNet, SVHN-source, or r
 ```
 
 Results are saved in unique `runs/logme/<source>/` directories. See [Phase 4 methodology and interpretation](docs/p4_transferability.md) for the evidence formula, feature dimensions, comparability checks, and limitations. LogME is an estimate of frozen-feature suitability, not demonstrated negative transfer.
+
+## Phase 5: selective transfer and validation guard
+
+TransferGuard ranks saved, compatible final-stage LogME scores, then trains a scratch reference and three adaptations of the chosen source: frozen features, late feature blocks, and all parameters. All four models use the same 2,000 CIFAR-10 training images and epoch budget. A balanced 2,500-image validation partition selects checkpoints and the adaptation policy. A disjoint balanced 2,500-image guard partition compares that policy with scratch using a paired bootstrap. Transfer is selected only if the lower 95% confidence bound for its accuracy improvement is above zero. No official CIFAR-10 test images are loaded by this experiment.
+
+The command only runs when invoked; it can require substantial GPU time. From the repository root:
+
+```powershell
+.\.venv\Scripts\python.exe -m experiments.transferguard.run --source auto --epochs 30 --batch-size 16 --seed 42 --device cuda
+.\.venv\Scripts\python.exe -m experiments.transferguard.run --source svhn --source-checkpoint runs\source_svhn\20261023-113328-c9cdc993\best_model.pth --epochs 30 --batch-size 16 --seed 42 --device cuda
+```
+
+By default, the script uses the newest compatible saved LogME run per available source. Pass `--imagenet-logme-run` and/or `--svhn-logme-run` to pin runs. `--source imagenet` or `--source svhn` overrides LogME ranking for a controlled experiment, while still requiring a compatible score. The SVHN checkpoint must match the checkpoint hashed by its LogME run. Learning rates can be set with `--scratch-lr`, `--frozen-lr`, `--late-lr`, and `--full-lr`; `--bootstrap-samples` and `--device cpu` are also available. Each invocation writes only to a unique `runs/transferguard/` folder, with candidate checkpoints, epoch metrics, configuration, and a decision summary. See [Phase 5 method and limitations](docs/p5_transferguard.md).
