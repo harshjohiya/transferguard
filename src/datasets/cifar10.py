@@ -20,6 +20,17 @@ def get_cifar10_eval_transform():
     ])
 
 
+def get_cifar10_train_transform():
+    """Training augmentation shared by earlier phases and TransferGuard."""
+    return transforms.Compose([
+        transforms.RandomCrop(32, padding=4),
+        transforms.RandomHorizontalFlip(),
+        transforms.Resize((128, 128)),
+        transforms.ToTensor(),
+        transforms.Normalize(IMAGENET_MEAN, IMAGENET_STD),
+    ])
+
+
 def balanced_split_indices(targets, train_size=2000, val_size=5000, seed=42):
     by_class = defaultdict(list)
     for index, label in enumerate(targets):
@@ -51,13 +62,7 @@ def balanced_split_indices(targets, train_size=2000, val_size=5000, seed=42):
 
 
 def get_cifar10_datasets(data_dir="data/raw", train_size=2000, val_size=5000, seed=42):
-    train_transform = transforms.Compose([
-        transforms.RandomCrop(32, padding=4),
-        transforms.RandomHorizontalFlip(),
-        transforms.Resize((128, 128)),
-        transforms.ToTensor(),
-        transforms.Normalize(IMAGENET_MEAN, IMAGENET_STD),
-    ])
+    train_transform = get_cifar10_train_transform()
     eval_transform = get_cifar10_eval_transform()
 
     root = str(Path(data_dir))
