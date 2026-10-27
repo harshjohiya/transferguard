@@ -15,8 +15,7 @@ The notebook orchestration is new; the verified P1–P5 modules remain dependenc
 Run the small existing checks before new experiments:
 
 ```powershell
-.\.venv\Scripts\python.exe -m unittest tests.test_cifar10 tests.test_baselines tests.test_negative_transfer tests.test_transferability -v
-.\.venv\Scripts\python.exe -m unittest tests.test_guard -v
+.\.venv\Scripts\python.exe -m unittest discover -s tests -p 'test_*.py' -v
 ```
 
 For checkpoint parity, use the same saved P3 source checkpoint in both paths and compare `load_svhn_model` state dictionaries; compare LogME on the same feature matrix and labels with `src.transferability.logme.logme_score`; compare notebook split index lists with P1/P5 split functions. Keep old modules until these checks and a notebook smoke execution pass. Full training is never started by opening a notebook.
