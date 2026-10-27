@@ -1,22 +1,33 @@
 """Small notebook-to-legacy parity checks; no datasets or lengthy training."""
 import ast
+import csv
 import json
+import platform
+import time
 import tempfile
 import unittest
 from pathlib import Path
 
 import numpy as np
 import torch
-from torch.utils.data import DataLoader, TensorDataset
+from torch.utils.data import DataLoader, Subset, TensorDataset
 
-from experiments.baselines.train import save_checkpoint, seed_everything
+from experiments.baselines.train import run_epoch, save_checkpoint, seed_everything
 from experiments.negative_transfer.train_target import load_svhn_model
+from src.datasets.cifar10 import balanced_split_indices, get_cifar10_eval_transform, get_cifar10_train_transform
+from src.guard.decision import split_validation_indices
 from src.models.mobilenet import get_model
 from src.transferability.features import extract_features, load_source_model
 from src.transferability.logme import logme_score
 
 
 ROOT = Path(__file__).resolve().parents[1]
+
+
+def notebook_cell(filename, prefix):
+    notebook = json.loads((ROOT / filename).read_text(encoding="utf-8"))
+    return next("".join(cell["source"]) for cell in notebook["cells"]
+                if cell["cell_type"] == "code" and "".join(cell["source"]).startswith(prefix))
 
 
 def notebook_function(filename, name, namespace):
@@ -38,6 +49,74 @@ class NotebookParityTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         torch.set_num_threads(2)
+
+    def test_target_indices_match_p1_and_p5(self):
+        class FakeCIFAR10:
+            def __init__(self, root, train, download, transform):
+                self.targets = [label for label in range(10) for _ in range(1000)]
+                self.transform = transform
+
+            def __len__(self):
+                return len(self.targets)
+
+            def __getitem__(self, index):
+                return torch.zeros(3, 128, 128), self.targets[index]
+
+        namespace = dict(CIFAR10=FakeCIFAR10, TRAIN_SIZE=2000, VALIDATION_SIZE=5000,
+                         BATCH_SIZE=16, SEED=42, DataLoader=DataLoader, Subset=Subset,
+                         balanced_split_indices=balanced_split_indices,
+                         split_validation_indices=split_validation_indices,
+                         get_cifar10_train_transform=get_cifar10_train_transform,
+                         get_cifar10_eval_transform=get_cifar10_eval_transform)
+        code = notebook_cell("01_negative_transfer.ipynb", "train_data = CIFAR10")
+        exec(compile(code, "01_negative_transfer.ipynb", "exec"), namespace)
+        expected_train, expected_val = balanced_split_indices(
+            FakeCIFAR10(None, True, False, None).targets, 2000, 5000, 42)
+        expected_select, expected_guard = split_validation_indices(
+            expected_val, FakeCIFAR10(None, True, False, None).targets, 42)
+        self.assertEqual(namespace["train_idx"], expected_train)
+        self.assertEqual(namespace["selection_idx"], expected_select)
+        self.assertEqual(namespace["guard_idx"], expected_guard)
+
+    def test_one_epoch_checkpoint_and_metrics_match_p2(self):
+        with tempfile.TemporaryDirectory() as directory:
+            images = torch.randn(4, 3, 4, 4)
+            labels = torch.tensor([0, 1, 0, 1])
+            loader = DataLoader(TensorDataset(images, labels), batch_size=2)
+            def small_model(source, checkpoint=None):
+                return torch.nn.Sequential(torch.nn.Flatten(), torch.nn.Linear(48, 2))
+            namespace = dict(SEED=42, EPOCHS=1, DEVICE=torch.device("cpu"),
+                             ROOT=Path(directory), LR={"scratch": 1e-3},
+                             TRAIN_SIZE=4, BATCH_SIZE=2, train_idx=[0, 1, 2, 3],
+                             selection_idx=[4, 5, 6, 7], guard_idx=[8, 9],
+                             train_loader=loader, selection_loader=loader,
+                             seed_everything=seed_everything, make_target_model=small_model,
+                             run_epoch=run_epoch, save_checkpoint=save_checkpoint,
+                             torch=torch, nn=torch.nn, Path=Path, csv=csv, json=json,
+                             time=time, platform=platform)
+            train_target = notebook_function(
+                "01_negative_transfer.ipynb", "train_target", namespace)
+            run_dir = train_target("scratch")
+            checkpoint = torch.load(run_dir/"best_model.pth", weights_only=True)
+            with (run_dir/"metrics.csv").open(newline="") as handle:
+                row = next(csv.DictReader(handle))
+
+            seed_everything(42)
+            model = small_model("scratch")
+            optimizer = torch.optim.AdamW(model.parameters(), lr=1e-3)
+            criterion = torch.nn.CrossEntropyLoss()
+            scaler = torch.amp.GradScaler("cuda", enabled=False)
+            model.train()
+            train_loss, train_acc = run_epoch(
+                model, loader, criterion, torch.device("cpu"), optimizer, scaler)
+            model.eval()
+            val_loss, val_acc = run_epoch(model, loader, criterion, torch.device("cpu"))
+            self.assertAlmostEqual(float(row["train_loss"]), train_loss)
+            self.assertAlmostEqual(float(row["train_accuracy"]), train_acc)
+            self.assertAlmostEqual(float(row["selection_loss"]), val_loss)
+            self.assertAlmostEqual(float(row["selection_accuracy"]), val_acc)
+            for key, value in model.state_dict().items():
+                torch.testing.assert_close(checkpoint["model_state_dict"][key], value)
 
     def test_svhn_checkpoint_initialization_matches_p3(self):
         with tempfile.TemporaryDirectory() as directory:
