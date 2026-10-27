@@ -1,0 +1,44 @@
+name: Notebook migration smoke
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - '01_negative_transfer.ipynb'
+      - '02_transferguard.ipynb'
+      - 'src/**'
+      - 'experiments/**'
+      - 'tests/**'
+      - '.github/workflows/notebook-smoke.yml'
+  workflow_dispatch:
+
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install project and test dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -r requirements.txt
+          python -m pip install numpy scipy matplotlib
+      - name: P1-P4 and guard smoke tests
+        run: python -m unittest tests.test_cifar10 tests.test_baselines tests.test_negative_transfer tests.test_transferability tests.test_guard -v
+      - name: Check notebook JSON and code syntax
+        run: |
+          python - <<'PY'
+          import ast
+          import json
+          from pathlib import Path
+          for name in ("01_negative_transfer.ipynb", "02_transferguard.ipynb"):
+              notebook = json.loads(Path(name).read_text(encoding="utf-8"))
+              assert notebook["nbformat"] == 4
+              for i, cell in enumerate(notebook["cells"]):
+                  if cell["cell_type"] == "code":
+                      ast.parse("".join(cell["source"]), filename=f"{name}:cell{i}")
+              print(name, len(notebook["cells"]), "cells: syntax OK")
+          PY
