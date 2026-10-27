@@ -27,7 +27,7 @@ jobs:
           python -m pip install -r requirements.txt
           python -m pip install numpy scipy matplotlib
       - name: P1-P4 and guard smoke tests
-        run: python -m unittest tests.test_cifar10 tests.test_baselines tests.test_negative_transfer tests.test_transferability tests.test_guard -v
+        run: python -m unittest discover -s tests -p 'test_*.py' -v
       - name: Check notebook JSON and code syntax
         run: |
           python - <<'PY'
