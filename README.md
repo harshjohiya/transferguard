@@ -1,5 +1,27 @@
 # TransferGuard
 
+## Notebook-first research workflow
+
+Start with [01_negative_transfer.ipynb](01_negative_transfer.ipynb) for the controlled scratch, ImageNet, SVHN, and optional PathMNIST comparison. Continue with [02_transferguard.ipynb](02_transferguard.ipynb) for frozen features, the verified LogME score, transfer-advantage curves, three adaptation policies, and the validation-based scratch fallback. Open the notebooks from the repository root so the existing Python modules are importable. Install `requirements.txt` first, then `requirements-notebooks.txt` with your environment's normal package index. The optional SVHN and PathMNIST cells also need SciPy (`requirements-svhn.txt`) and `medmnist`, respectively. Training, source pretraining, scoring, and final test evaluation are opt-in cells.
+
+The research split is 2,000 balanced CIFAR-10 training images plus 2,500 selection and 2,500 guard images from the official training partition. The official test partition is opened only after the rule and policy are fixed. New notebook outputs live in `runs/notebooks/`; previous P1–P5 outputs retain their original paths. Set the seed, checkpoint paths, epoch budget, and learning rates in the configuration cells. The notebooks write configuration, metrics, and checkpoints for each new run.
+
+Before interpreting a transfer gap, check scratch convergence, repeat prespecified seeds and learning rates, and report both source and target training cost. A falling transfer advantage is an exploratory warning, not a tuned decision rule. The guard selects transfer only when its paired bootstrap lower bound over scratch is positive. Do not revise that rule using final test results.
+
+### Migration and verification
+
+The notebook orchestration is new; the verified P1–P5 modules remain dependencies during parity verification. Notebook 01 reuses P1 balanced splits, P2 epoch/checkpoint code, and the P3 SVHN loader. Notebook 02 reuses P4 feature extraction and LogME plus P5 policy training and paired guard. No old module or historical result has been removed.
+
+Run the small existing checks before new experiments:
+
+```powershell
+.\.venv\Scripts\python.exe -m unittest discover -s tests -p 'test_*.py' -v
+```
+
+For checkpoint parity, use the same saved P3 source checkpoint in both paths and compare `load_svhn_model` state dictionaries; compare LogME on the same feature matrix and labels with `src.transferability.logme.logme_score`; compare notebook split index lists with P1/P5 split functions. Keep old modules until these checks and a notebook smoke execution pass. Full training is never started by opening a notebook.
+
+## Legacy P1–P5 commands and documentation
+
 TransferGuard studies how to detect and avoid negative transfer in lightweight vision models. Phase 1 prepares a reproducible CIFAR-10 pipeline. Phase 2 trains preliminary MobileNetV3-Small baselines.
 
 ## Environment
