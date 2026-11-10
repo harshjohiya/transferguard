@@ -1,0 +1,64 @@
+# Local Python environments and caches
+.venv/
+venv/
+env/
+__pycache__/
+*.py[cod]
+.ipynb_checkpoints/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.cache/
+
+# Local configuration, credentials, and editor state
+.env
+.env.*
+!.env.example
+.vscode/
+.idea/
+.aws/
+.codex/
+.agents/
+*.pem
+*.key
+*.p12
+*.pfx
+credentials*
+secrets*
+
+# Downloaded datasets and generated experiment output
+/data/
+/organamnist_data/
+/results/
+/organamnist_results/
+/transferguard_cifar10_results/
+/transferguard_noise40_results/
+/transferguard_refine_results/
+
+# Model weights, generated arrays, logs, and temporary files
+*.pt
+*.pth
+*.ckpt
+*.safetensors
+*.npy
+*.npz
+*.log
+*.tmp
+*.temp
+*.bak
+*.swp
+*.swo
+*.pid
+*.lock
+Thumbs.db
+.DS_Store
+
+# Earlier exploratory notebooks are retained locally, outside the main workflow.
+/TransferGuard_Local_GPU_Steps_1_to_5.ipynb
+/TransferGuard_OrganAMNIST_Local_GPU.ipynb
+/TransferGuard_Steps_1_to_5.ipynb
+
+# Original local copies of the three cleaned notebooks in notebooks/.
+/TransferGuard_CIFAR10_80pct_Negative_Transfer_LocalGPU.ipynb
+/TransferGuard_CIFAR10_Noise40_Clean.ipynb
+/TransferGuard_REFINE_40_80_Local_GPU.ipynb

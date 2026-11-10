@@ -1,0 +1,7 @@
+# Install a compatible CUDA-enabled torch and torchvision build separately;
+# see README.md. The notebooks import both packages.
+numpy
+pandas
+matplotlib
+ipykernel
+jupyterlab
