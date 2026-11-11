@@ -279,8 +279,6 @@ def run_condition(seed, noise, args, device, train_data, protocol_sha):
         "source_checkpoint_sha256": sha256_file(run_dir / "source_last.pt"),
     })
     result_path.write_text(json.dumps(row, indent=2))
-    (run_dir / "scratch_last.pt").unlink(missing_ok=True)   # keep only the source checkpoint
-    (run_dir / "frozen_last.pt").unlink(missing_ok=True)
     print(f"  guard: {row['guard_choice']} | better: {row['better_method']} | "
           f"regret {row['guard_regret']:.2f} pts (pilot-only: {row['pilot_only_choice']})")
 
