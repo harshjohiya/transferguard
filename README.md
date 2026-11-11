@@ -47,6 +47,12 @@ The final check must print `True` for CUDA. Choose the new kernel in Jupyter or 
 
 Open the notebooks from the repository root or `notebooks/`; their setup cells resolve datasets and outputs to the repository root in either case. CIFAR-10 downloads into `data/` on first use. Each notebook writes checkpoints, epoch histories, splits, plots, and analysis files into its own ignored results directory. A fresh clone contains **no datasets or checkpoints**, so reproducing REFINE requires running the earlier source training first. Training is GPU intensive; no training is required to read the code or documented results.
 
+## Additional analysis scripts
+
+The `experiments/` directory contains two follow-up analyses. Run `python experiments/primary_verification.py` after the three notebooks to compare feature-only, pilot-only, and combined decisions on the **same seed-42 development conditions**. It reads their local CSVs and writes derived tables to ignored `results/`; these are not independent detector validation.
+
+`python experiments/test_guard_protocol.py` checks the frozen decision rule without a GPU. `python experiments/independent_validation.py --dry-run` prints the planned new-seed conditions. The full validation runner needs CUDA and writes its own checkpoints and results under ignored `results/validation/`. Its GPU training path has not yet been smoke-tested, and no independent results are included in this repository.
+
 ## Current limits and contributions
 
 The reported numbers are single runs on one CIFAR-10 split and seed. They are best validation accuracies, not estimates from repeated seeds or held-out detector tests. The demonstration's pilot signals use the validation histories, and its thresholds require independent evaluation before claims of generalization. The early PathMNIST and OrganAMNIST notebooks remain local exploratory work and are outside this primary workflow.
