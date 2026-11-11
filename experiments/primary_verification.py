@@ -1,15 +1,19 @@
+"""Exploratory guard-rule comparison on the existing seed-42 CIFAR-10 runs.
 
+This reuses development conditions; it is not independent detector validation.
+"""
 import pandas as pd
 import numpy as np
 from pathlib import Path
 
-results_dir = Path("results")
+root = Path(__file__).resolve().parent.parent
+results_dir = root / "results"
 
 # Load results
-scratch = pd.read_csv(results_dir / "transferguard_cifar10_results" / "scratch_small_history.csv")
-frozen40 = pd.read_csv(results_dir / "transferguard_noise40_results" / "frozen_noise40_reset_history.csv")
-frozen80 = pd.read_csv(results_dir / "transferguard_cifar10_results" / "frozen_noise80_history.csv")
-probes = pd.read_csv(results_dir / "transferguard_refine_results" / "feature_probe.csv")
+scratch = pd.read_csv(root / "transferguard_cifar10_results" / "scratch_small_history.csv")
+frozen40 = pd.read_csv(root / "transferguard_noise40_results" / "frozen_noise40_reset_history.csv")
+frozen80 = pd.read_csv(root / "transferguard_cifar10_results" / "frozen_noise80_history.csv")
+probes = pd.read_csv(root / "transferguard_refine_results" / "feature_probe.csv")
 
 
 # Extract pilot and final accuracies
@@ -106,6 +110,7 @@ print(summary.to_string(index=False))
 
 
 # Save results
+results_dir.mkdir(exist_ok=True)
 results.to_csv(results_dir / "primary_model_verification.csv", index=False)
 summary.to_csv(results_dir / "primary_model_verification_summary.csv", index=False)
 
